@@ -1,0 +1,1 @@
+"""SecureScope backend application package."""
