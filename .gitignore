@@ -3,6 +3,7 @@ frontend/dist/
 backend/__pycache__/
 backend/app/__pycache__/
 backend/tests/__pycache__/
+backend/tests/_tmp_history/
 backend/data/
 *.log
 *.pyc

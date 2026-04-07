@@ -72,6 +72,27 @@ npm run dev
 
 ---
 
+## ☁️ Deploying on Render
+
+This repo includes a root-level `render.yaml` blueprint for a single Render web service.
+Render builds the React frontend, then FastAPI serves the generated `frontend/dist` files and all API routes from one service.
+
+### Render Steps
+
+1. Push this repository to GitHub.
+2. In Render, choose `New +` → `Blueprint`.
+3. Select this repository.
+4. Render will create one web service named `securescope`.
+5. Open the deployed URL when the build finishes.
+
+### Notes
+
+- The health check path is `/health`.
+- The frontend now uses same-origin API requests in production.
+- Local file-based scan history is ephemeral on Render unless you later move it to a managed database or persistent disk.
+
+---
+
 ## 🧪 Test Domains
 
 | Domain | Expected Result |
