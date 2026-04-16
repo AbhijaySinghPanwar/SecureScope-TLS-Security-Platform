@@ -42,8 +42,8 @@ export const CLIP = {
 
 export const FONT = {
   heading: '"Orbitron", "Share Tech Mono", monospace',
-  body:    '"JetBrains Mono", "Fira Code", "Consolas", monospace',
-  label:   '"Share Tech Mono", monospace',
+  body:    '"Share Tech Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace',
+  label:   '"Share Tech Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace',
 }
 
 export const TRANSITIONS = {

@@ -219,7 +219,7 @@ const s = {
   textarea: {
     width: '100%', background: '#0a0e1a', border: '1px solid #1e2d50',
     borderRadius: 10, padding: '14px 16px', color: '#e2e8f0',
-    fontFamily: "'JetBrains Mono', monospace", fontSize: 13, lineHeight: 1.7,
+    fontFamily: "'Share Tech Mono', 'JetBrains Mono', monospace", fontSize: 13, lineHeight: 1.7,
     resize: 'vertical', transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   countBadge: {
@@ -235,7 +235,7 @@ const s = {
   chip: {
     background: '#0a0e1a', border: '1px solid #1e2d50', borderRadius: 6,
     padding: '4px 10px', fontSize: 12, color: '#94a3b8', cursor: 'pointer',
-    fontFamily: "'JetBrains Mono', monospace", transition: 'all 0.15s',
+    fontFamily: "'Share Tech Mono', 'JetBrains Mono', monospace", transition: 'all 0.15s',
   },
   actions: { display: 'flex', gap: 10, marginBottom: 10 },
   clearBtn: {

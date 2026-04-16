@@ -4,7 +4,7 @@
    scrollbar, and utility classes that inline styles can't do.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 /* ── Reset & Base ─────────────────────────────────────────── */
 *, *::before, *::after {
@@ -20,9 +20,10 @@ html {
 body {
   background: #0a0a0f;
   color: #e0e0e0;
-  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-family: "Share Tech Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -63,7 +64,7 @@ body::after {
 textarea::placeholder,
 input::placeholder {
   color: #3a3a52;
-  font-family: "JetBrains Mono", monospace;
+  font-family: "Share Tech Mono", "JetBrains Mono", "Fira Code", "Consolas", monospace;
 }
 
 textarea:focus,
