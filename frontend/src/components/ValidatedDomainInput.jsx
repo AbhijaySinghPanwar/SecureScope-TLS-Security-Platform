@@ -222,7 +222,7 @@ export default function ValidatedDomainInput({ onScan, isLoading, initialValue =
       </div>
 
       <style>{`
-        #domain-input::placeholder { color: #3a3a52; }
+        #domain-input::placeholder { color: #5f6685; opacity: 1; }
         #domain-input:focus { outline: none; border-color: ${COLORS.accent} !important; box-shadow: 0 0 0 2px ${COLORS.accent}20, 0 0 10px ${COLORS.accent}30 !important; }
         @keyframes btnSpin { to { transform: rotate(360deg); } }
       `}</style>
@@ -298,8 +298,8 @@ const s = {
   },
   subtitle: {
     fontFamily: FONT.body,
-    fontSize: 12,
-    color: COLORS.mutedFg,
+    fontSize: 13,
+    color: '#96a0c8',
     letterSpacing: '0.03em',
   },
   textareaWrap: { position: 'relative', marginBottom: 10 },
@@ -320,9 +320,9 @@ const s = {
     border: `1px solid ${COLORS.border}`,
     clipPath: CLIP.chamferSm,
     padding: '14px 16px 14px 32px',
-    color: COLORS.accent,
+    color: '#b9fff0',
     fontFamily: FONT.body,
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 1.8,
     resize: 'vertical',
     transition: TRANSITIONS.base,
@@ -346,25 +346,25 @@ const s = {
   error: {
     fontFamily: FONT.body,
     color: COLORS.warn,
-    fontSize: 12,
+    fontSize: 13,
     marginBottom: 8,
     letterSpacing: '0.05em',
   },
   helper: {
     fontFamily: FONT.label,
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 16,
     lineHeight: 1.6,
-    letterSpacing: '0.08em',
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
   },
   chipsSection: { marginBottom: 20 },
   chipsLabel: {
     fontFamily: FONT.label,
-    fontSize: 10,
-    color: COLORS.mutedFg,
+    fontSize: 11,
+    color: '#8d97bd',
     textTransform: 'uppercase',
-    letterSpacing: '0.12em',
+    letterSpacing: '0.1em',
     display: 'block',
     marginBottom: 8,
   },
@@ -373,10 +373,10 @@ const s = {
     background: COLORS.bg,
     border: `1px solid ${COLORS.border}`,
     clipPath: CLIP.chamferXs,
-    padding: '4px 10px',
+    padding: '5px 10px',
     fontFamily: FONT.body,
-    fontSize: 11,
-    color: COLORS.mutedFg,
+    fontSize: 12,
+    color: '#a8b4dd',
     cursor: 'pointer',
     transition: TRANSITIONS.base,
   },
@@ -426,10 +426,10 @@ const s = {
   },
   hint: {
     fontFamily: FONT.label,
-    fontSize: 10,
-    color: COLORS.mutedFg,
+    fontSize: 11,
+    color: '#7f89b3',
     textAlign: 'center',
-    letterSpacing: '0.12em',
+    letterSpacing: '0.1em',
     textTransform: 'uppercase',
   },
 }
