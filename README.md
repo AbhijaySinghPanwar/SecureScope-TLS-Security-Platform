@@ -1,6 +1,12 @@
 # 🔐 SecureScope
 **Intelligent TLS/HTTPS Security Analysis and Vulnerability Assessment Platform**
 
+## 🌐 Live Deployment
+
+[![Live Demo](https://img.shields.io/badge/Live-Demo-green?style=for-the-badge)](https://securescope-tls-security-platform.onrender.com)
+
+🔗 https://securescope-tls-security-platform.onrender.com
+
 ---
 
 ## 🏗 Project Structure
