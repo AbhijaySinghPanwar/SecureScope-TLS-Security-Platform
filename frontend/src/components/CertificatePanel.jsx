@@ -1,32 +1,41 @@
+/**
+ * CertificatePanel.jsx
+ * Displays SSL certificate details and TLS configuration.
+ * Cyberpunk redesign — chamfered card, terminal tabs, neon status badges.
+ */
 import React, { useState } from 'react'
+import { COLORS, SHADOWS, CLIP, FONT, TRANSITIONS } from '../theme.js'
 
 function InfoRow({ label, value, mono = false, highlight, children }) {
-  const textStyle = {
-    fontSize: 14,
-    color: highlight || '#e2e8f0',
-    fontFamily: mono ? "'JetBrains Mono', monospace" : 'inherit',
-    wordBreak: 'break-all',
-  }
-
   return (
     <div style={s.row}>
       <span style={s.label}>{label}</span>
-      <span style={textStyle}>{children ?? value ?? '-'}</span>
+      <span style={{
+        ...s.value,
+        color: highlight || COLORS.fg,
+        fontFamily: mono ? FONT.body : FONT.body,
+      }}>
+        {children ?? value ?? '—'}
+      </span>
     </div>
   )
 }
 
 function StatusBadge({ ok, trueText, falseText }) {
+  const color = ok ? COLORS.accent : COLORS.destructive
   return (
-    <span
-      style={{
-        ...s.badge,
-        background: ok ? 'rgba(0,230,118,0.12)' : 'rgba(255,82,82,0.12)',
-    color: ok ? '#9cf7c4' : '#ffb4ab',
-        border: `1px solid ${ok ? 'rgba(0,230,118,0.3)' : 'rgba(255,82,82,0.3)'}`,
-      }}
-    >
-      {ok ? `OK ${trueText}` : `NO ${falseText}`}
+    <span style={{
+      fontFamily: FONT.label,
+      fontSize: 11, fontWeight: 700,
+      clipPath: CLIP.chamferXs,
+      padding: '4px 10px',
+      background: `${color}12`,
+      color,
+      border: `1px solid ${color}50`,
+      letterSpacing: '0.1em',
+      boxShadow: ok ? SHADOWS.neonSm : SHADOWS.neonDestructive,
+    }}>
+      {ok ? `✓ ${trueText}` : `✗ ${falseText}`}
     </span>
   )
 }
@@ -37,54 +46,62 @@ export default function CertificatePanel({ cert, tls }) {
   if (!cert && !tls) return null
 
   const expiryColor = cert
-    ? cert.is_expired
-      ? '#ff5252'
-      : cert.days_until_expiry <= 30
-        ? '#ffab40'
-        : '#00e676'
-    : '#94a3b8'
+    ? cert.is_expired ? COLORS.destructive
+      : cert.days_until_expiry <= 30 ? COLORS.warn
+      : COLORS.accent
+    : COLORS.mutedFg
 
   const expiryLabel = cert
     ? cert.is_expired
       ? `EXPIRED (${Math.abs(cert.days_until_expiry)} days ago)`
       : `${cert.days_until_expiry} days remaining`
-    : '-'
+    : '—'
 
   return (
     <div style={s.card}>
+      {/* Sub-tabs */}
       <div style={s.tabs}>
-        <button style={{ ...s.tab, ...(tab === 'cert' ? s.tabActive : {}) }} onClick={() => setTab('cert')}>
-          Certificate
-        </button>
-        <button style={{ ...s.tab, ...(tab === 'tls' ? s.tabActive : {}) }} onClick={() => setTab('tls')}>
-          TLS Details
-        </button>
+        {['cert', 'tls'].map(id => (
+          <button
+            key={id}
+            id={`cert-tab-${id}`}
+            style={{
+              ...s.tab,
+              ...(tab === id ? s.tabActive : {}),
+            }}
+            onClick={() => setTab(id)}
+          >
+            {id === 'cert' ? 'CERTIFICATE' : 'TLS DETAILS'}
+          </button>
+        ))}
       </div>
 
+      {/* Certificate tab */}
       {tab === 'cert' && cert && (
         <div style={s.content}>
-          <InfoRow label="Subject (CN)" value={cert.subject} mono />
-          <InfoRow label="Issuer" value={cert.issuer} />
-          <InfoRow label="Issued On" value={cert.issued_on} mono />
-          <InfoRow label="Expires On" value={cert.expires_on} mono />
-          <InfoRow label="Days Until Expiry" value={expiryLabel} highlight={expiryColor} />
-          <InfoRow label="Status">
-            <StatusBadge ok={!cert.is_expired} trueText="Valid" falseText="Expired" />
-          </InfoRow>
+          <InfoRow label="SUBJECT (CN)" value={cert.subject} mono />
+          <InfoRow label="ISSUER" value={cert.issuer} />
+          <InfoRow label="ISSUED ON" value={cert.issued_on} mono />
+          <InfoRow label="EXPIRES ON" value={cert.expires_on} mono />
+          <InfoRow label="DAYS UNTIL EXPIRY" value={expiryLabel} highlight={expiryColor} />
           <div style={s.row}>
-            <span style={s.label}>Self-Signed</span>
-            <StatusBadge ok={!cert.is_self_signed} trueText="CA-signed" falseText="Self-signed" />
+            <span style={s.label}>STATUS</span>
+            <StatusBadge ok={!cert.is_expired} trueText="VALID" falseText="EXPIRED" />
+          </div>
+          <div style={s.row}>
+            <span style={s.label}>SELF-SIGNED</span>
+            <StatusBadge ok={!cert.is_self_signed} trueText="CA-SIGNED" falseText="SELF-SIGNED" />
           </div>
           <InfoRow
-            label="Key Type / Size"
-            value={`${cert.key_type}${cert.key_size > 0 ? ` ${cert.key_size}-bit` : ''}`}
+            label="KEY TYPE / SIZE"
+            value={`${cert.key_type}${cert.key_size > 0 ? ` ${cert.key_size}-BIT` : ''}`}
             mono
           />
-          <InfoRow label="Signature Algorithm" value={cert.signature_algorithm} mono />
-          <InfoRow label="Serial Number" value={cert.serial_number} mono />
+          <InfoRow label="SIGNATURE ALGORITHM" value={cert.signature_algorithm} mono />
+          <InfoRow label="SERIAL NUMBER" value={cert.serial_number} mono />
           {cert.san_domains.length > 0 && (
             <div style={s.row}>
-              <span style={s.label}>SAN Domains</span>
+              <span style={s.label}>SAN DOMAINS</span>
               <div style={s.sanList}>
                 {cert.san_domains.slice(0, 8).map((domain) => (
                   <span key={domain} style={s.sanChip}>{domain}</span>
@@ -98,99 +115,126 @@ export default function CertificatePanel({ cert, tls }) {
         </div>
       )}
 
+      {/* TLS Details tab */}
       {tab === 'tls' && tls && (
         <div style={s.content}>
           <InfoRow
-            label="Protocol Version"
+            label="PROTOCOL VERSION"
             value={tls.protocol_version}
             mono
-            highlight={tls.is_weak_protocol ? '#ff5252' : '#00e676'}
+            highlight={tls.is_weak_protocol ? COLORS.destructive : COLORS.accent}
           />
           <InfoRow
-            label="Cipher Suite"
+            label="CIPHER SUITE"
             value={tls.cipher_suite}
             mono
-            highlight={tls.is_weak_cipher ? '#ff5252' : '#e2e8f0'}
+            highlight={tls.is_weak_cipher ? COLORS.destructive : COLORS.fg}
           />
-          <InfoRow label="Cipher Bits" value={tls.cipher_bits ? `${tls.cipher_bits}-bit` : '-'} mono />
+          <InfoRow label="CIPHER BITS" value={tls.cipher_bits ? `${tls.cipher_bits}-BIT` : '—'} mono />
           <div style={s.row}>
-            <span style={s.label}>TLS 1.3 Support</span>
-            <StatusBadge ok={tls.supports_tls13} trueText="Supported" falseText="Not supported" />
+            <span style={s.label}>TLS 1.3 SUPPORT</span>
+            <StatusBadge ok={tls.supports_tls13} trueText="SUPPORTED" falseText="NOT SUPPORTED" />
           </div>
           <div style={s.row}>
-            <span style={s.label}>TLS 1.2 Support</span>
-            <StatusBadge ok={tls.supports_tls12} trueText="Supported" falseText="Not supported" />
+            <span style={s.label}>TLS 1.2 SUPPORT</span>
+            <StatusBadge ok={tls.supports_tls12} trueText="SUPPORTED" falseText="NOT SUPPORTED" />
           </div>
           <div style={s.row}>
-            <span style={s.label}>Weak Cipher</span>
-            <StatusBadge ok={!tls.is_weak_cipher} trueText="No" falseText="Weak cipher" />
+            <span style={s.label}>WEAK CIPHER</span>
+            <StatusBadge ok={!tls.is_weak_cipher} trueText="CLEAN" falseText="WEAK CIPHER DETECTED" />
           </div>
           <div style={s.row}>
-            <span style={s.label}>HSTS Enabled</span>
-            <StatusBadge ok={tls.hsts_enabled} trueText="Yes" falseText="No" />
+            <span style={s.label}>HSTS ENABLED</span>
+            <StatusBadge ok={tls.hsts_enabled} trueText="ENABLED" falseText="DISABLED" />
           </div>
           {tls.hsts_enabled && (
             <InfoRow
-              label="HSTS max-age"
-              value={tls.hsts_max_age ? `${tls.hsts_max_age.toLocaleString()}s (${Math.round(tls.hsts_max_age / 86400)} days)` : 'Not set'}
+              label="HSTS MAX-AGE"
+              value={tls.hsts_max_age
+                ? `${tls.hsts_max_age.toLocaleString()}s (${Math.round(tls.hsts_max_age / 86400)} days)`
+                : 'NOT SET'}
               mono
             />
           )}
         </div>
       )}
 
-      {tab === 'cert' && !cert && <p style={s.noData}>Certificate data unavailable.</p>}
-      {tab === 'tls' && !tls && <p style={s.noData}>TLS data unavailable.</p>}
+      {tab === 'cert' && !cert && <p style={s.noData}>&gt; Certificate data unavailable.</p>}
+      {tab === 'tls' && !tls && <p style={s.noData}>&gt; TLS data unavailable.</p>}
     </div>
   )
 }
 
 const s = {
   card: {
-    background: '#0f1629',
-    border: '1px solid #1e2d50',
-    borderRadius: 16,
+    background: COLORS.card,
+    border: `1px solid ${COLORS.border}`,
+    clipPath: CLIP.chamfer,
     overflow: 'hidden',
     animation: 'fadeIn 0.5s ease',
   },
-  tabs: { display: 'flex', borderBottom: '1px solid #1e2d50' },
+  tabs: {
+    display: 'flex',
+    borderBottom: `1px solid ${COLORS.border}`,
+    background: `${COLORS.bg}cc`,
+  },
   tab: {
     flex: 1,
-    padding: '13px 16px',
+    padding: '12px 16px',
     background: 'transparent',
     border: 'none',
-    color: '#c7d5ef',
+    fontFamily: FONT.label,
+    fontSize: 11, fontWeight: 700,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    color: COLORS.mutedFg,
     cursor: 'pointer',
-    fontSize: 14,
-    fontFamily: "'Space Grotesk', sans-serif",
-    fontWeight: 500,
-    transition: 'all 0.15s',
+    transition: TRANSITIONS.fast,
   },
   tabActive: {
-    color: '#3d7fff',
-    borderBottom: '2px solid #3d7fff',
-    background: 'rgba(61,127,255,0.06)',
+    color: COLORS.accent3,
+    borderBottom: `2px solid ${COLORS.accent3}`,
+    background: `${COLORS.accent3}05`,
+    textShadow: `0 0 8px ${COLORS.accent3}60`,
   },
-  content: { padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 0 },
+  content: {
+    padding: '8px 24px 20px',
+    display: 'flex', flexDirection: 'column',
+  },
   row: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: 16,
-    padding: '10px 0',
-    borderBottom: '1px solid #0f1a30',
+    padding: '11px 0',
+    borderBottom: `1px solid ${COLORS.border}30`,
   },
-  label: { fontSize: 13, color: '#c7d5ef', flexShrink: 0, minWidth: 160, paddingTop: 2, fontWeight: 500 },
-  badge: { fontSize: 12, borderRadius: 6, padding: '4px 9px', fontWeight: 700 },
+  label: {
+    fontFamily: FONT.label,
+    fontSize: 10, color: COLORS.mutedFg,
+    flexShrink: 0, minWidth: 160,
+    paddingTop: 3, letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+  },
+  value: {
+    fontFamily: FONT.body,
+    fontSize: 12, wordBreak: 'break-all',
+    textAlign: 'right',
+  },
   sanList: { display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end' },
   sanChip: {
-    background: 'rgba(61,127,255,0.1)',
-    border: '1px solid rgba(61,127,255,0.2)',
-    borderRadius: 4,
-    padding: '2px 7px',
-    fontSize: 12,
-    fontFamily: "'JetBrains Mono', monospace",
-    color: '#e6eefc',
+    background: `${COLORS.accent3}10`,
+    border: `1px solid ${COLORS.accent3}30`,
+    clipPath: CLIP.chamferXs,
+    padding: '3px 8px',
+    fontFamily: FONT.body,
+    fontSize: 11,
+    color: COLORS.accent3,
   },
-  noData: { padding: 24, color: '#c7d5ef', fontSize: 14, textAlign: 'center' },
+  noData: {
+    padding: '28px 24px',
+    fontFamily: FONT.body,
+    color: COLORS.mutedFg,
+    fontSize: 13, textAlign: 'center',
+  },
 }

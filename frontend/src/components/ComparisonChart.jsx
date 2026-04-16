@@ -2,6 +2,7 @@
  * ComparisonChart.jsx
  * Chart.js visualizations: bar chart for multi-domain score comparison
  * and a radar chart for per-category breakdown.
+ * Cyberpunk redesign — neon grid lines, green radar fill, chamfered wrapper.
  */
 import React, { useEffect, useRef } from 'react'
 import {
@@ -9,8 +10,8 @@ import {
   CategoryScale, LinearScale, RadialLinearScale,
   Tooltip, Legend, Filler,
 } from 'chart.js'
+import { COLORS, CLIP, FONT } from '../theme.js'
 
-// Register only what we use (tree-shaking friendly)
 Chart.register(
   BarController, BarElement, LineElement, PointElement, RadarController,
   CategoryScale, LinearScale, RadialLinearScale,
@@ -22,7 +23,7 @@ const GRADE_COLORS = {
   'C': '#FF9800', 'D': '#FF5722', 'F': '#F44336',
 }
 
-/* ─── Bar chart: scores for all domains ──────────────────────── */
+/* ─── Bar chart ─────────────────────────────────────────────── */
 export function ScoreBarChart({ results }) {
   const ref = useRef(null)
   const chartRef = useRef(null)
@@ -33,7 +34,7 @@ export function ScoreBarChart({ results }) {
 
     const labels = results.map(r => r.domain)
     const scores = results.map(r => r.score?.total_score ?? 0)
-    const colors = results.map(r => GRADE_COLORS[r.score?.grade] ?? '#64748b')
+    const colors = results.map(r => GRADE_COLORS[r.score?.grade] ?? COLORS.mutedFg)
 
     chartRef.current = new Chart(ref.current, {
       type: 'bar',
@@ -42,10 +43,10 @@ export function ScoreBarChart({ results }) {
         datasets: [{
           label: 'Security Score',
           data: scores,
-          backgroundColor: colors.map(c => c + '30'),
+          backgroundColor: colors.map(c => c + '22'),
           borderColor: colors,
           borderWidth: 2,
-          borderRadius: 8,
+          borderRadius: 0,        // Sharp — no rounded bars
           borderSkipped: false,
         }],
       },
@@ -54,29 +55,40 @@ export function ScoreBarChart({ results }) {
         maintainAspectRatio: false,
         scales: {
           x: {
-            ticks: { color: '#d8e3f8', font: { family: "'JetBrains Mono', monospace", size: 12 } },
-            grid: { color: '#1e2d50' },
-            border: { color: '#1e2d50' },
+            ticks: {
+              color: COLORS.mutedFg,
+              font: { family: FONT.label, size: 10 },
+              maxRotation: 30,
+            },
+            grid: { color: `${COLORS.border}60` },
+            border: { color: COLORS.border },
           },
           y: {
             min: 0, max: 100,
-            ticks: { color: '#d8e3f8', font: { size: 12 } },
-            grid: { color: '#1e2d50' },
-            border: { color: '#1e2d50' },
+            ticks: {
+              color: COLORS.mutedFg,
+              font: { family: FONT.label, size: 10 },
+              stepSize: 25,
+            },
+            grid: { color: `${COLORS.border}60` },
+            border: { color: COLORS.border },
           },
         },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#0f1629',
-            borderColor: '#1e2d50',
+            backgroundColor: COLORS.card,
+            borderColor: COLORS.border,
             borderWidth: 1,
-            titleColor: '#e2e8f0',
-            bodyColor: '#e6eefc',
+            titleColor: COLORS.accent,
+            bodyColor: COLORS.fg,
+            titleFont: { family: FONT.label, size: 11 },
+            bodyFont: { family: FONT.body, size: 12 },
+            padding: 12,
             callbacks: {
               label: ctx => {
                 const r = results[ctx.dataIndex]
-                return ` Score: ${ctx.raw}/100  Grade: ${r.score?.grade ?? 'N/A'}`
+                return ` SCORE: ${ctx.raw}/100   GRADE: ${r.score?.grade ?? 'N/A'}`
               },
             },
           },
@@ -89,7 +101,7 @@ export function ScoreBarChart({ results }) {
 
   return (
     <div style={s.chartWrap}>
-      <p style={s.chartTitle}>Security Score Comparison</p>
+      <p style={s.chartTitle}>// SECURITY SCORE COMPARISON</p>
       <div style={{ height: 220 }}>
         <canvas ref={ref} />
       </div>
@@ -97,7 +109,7 @@ export function ScoreBarChart({ results }) {
   )
 }
 
-/* ─── Radar chart: breakdown for a single domain ─────────────── */
+/* ─── Radar chart ───────────────────────────────────────────── */
 export function ScoreRadarChart({ score, domain }) {
   const ref = useRef(null)
   const chartRef = useRef(null)
@@ -119,11 +131,12 @@ export function ScoreRadarChart({ score, domain }) {
         datasets: [{
           label: domain,
           data: pcts,
-          backgroundColor: 'rgba(61,127,255,0.15)',
-          borderColor: '#3d7fff',
+          backgroundColor: `${COLORS.accent}12`,
+          borderColor: COLORS.accent,
           borderWidth: 2,
-          pointBackgroundColor: '#3d7fff',
-          pointBorderColor: '#0a0e1a',
+          pointBackgroundColor: COLORS.accent,
+          pointBorderColor: COLORS.bg,
+          pointBorderWidth: 2,
           pointRadius: 4,
           fill: true,
         }],
@@ -135,22 +148,25 @@ export function ScoreRadarChart({ score, domain }) {
           r: {
             min: 0, max: 100,
             ticks: { display: false },
-            grid: { color: '#1e2d50' },
-            angleLines: { color: '#1e2d50' },
+            grid: { color: `${COLORS.border}80` },
+            angleLines: { color: `${COLORS.border}80` },
             pointLabels: {
-              color: '#e6eefc',
-              font: { family: "'Space Grotesk', sans-serif", size: 12 },
+              color: COLORS.mutedFg,
+              font: { family: FONT.label, size: 10 },
             },
           },
         },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#0f1629',
-            borderColor: '#1e2d50',
+            backgroundColor: COLORS.card,
+            borderColor: COLORS.border,
             borderWidth: 1,
-            titleColor: '#e2e8f0',
-            bodyColor: '#e6eefc',
+            titleColor: COLORS.accent,
+            bodyColor: COLORS.fg,
+            titleFont: { family: FONT.label, size: 11 },
+            bodyFont: { family: FONT.body, size: 12 },
+            padding: 12,
             callbacks: { label: ctx => ` ${ctx.raw}%` },
           },
         },
@@ -162,8 +178,8 @@ export function ScoreRadarChart({ score, domain }) {
 
   return (
     <div style={s.chartWrap}>
-      <p style={s.chartTitle}>Score Breakdown — {domain}</p>
-      <div style={{ height: 260 }}>
+      <p style={s.chartTitle}>// SCORE BREAKDOWN — {domain}</p>
+      <div style={{ height: 250 }}>
         <canvas ref={ref} />
       </div>
     </div>
@@ -172,11 +188,16 @@ export function ScoreRadarChart({ score, domain }) {
 
 const s = {
   chartWrap: {
-    background: '#0f1629', border: '1px solid #1e2d50',
-    borderRadius: 16, padding: '20px 24px', animation: 'fadeIn 0.5s ease',
+    background: COLORS.card,
+    border: `1px solid ${COLORS.border}`,
+    clipPath: CLIP.chamfer,
+    padding: '20px 24px',
+    animation: 'fadeIn 0.5s ease',
   },
   chartTitle: {
-    fontSize: 14, fontWeight: 700, color: '#e6eefc',
-    marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em',
+    fontFamily: FONT.label,
+    fontSize: 10, fontWeight: 700, color: COLORS.accent,
+    marginBottom: 16, letterSpacing: '0.15em',
+    textTransform: 'uppercase',
   },
 }

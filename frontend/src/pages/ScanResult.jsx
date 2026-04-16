@@ -1,120 +1,171 @@
 /**
  * ScanResult.jsx
  * Renders the full report for a single domain result.
- * Tabs: Overview | Certificate | Vulnerabilities
+ * Tabs: Overview | Certificate & TLS | Vulnerabilities
+ * Cyberpunk redesign — chamfered containers, neon tabs, terminal domain bar.
  */
 import React, { useState } from 'react'
 import ScoreCard from '../components/ScoreCard.jsx'
 import CertificatePanel from '../components/CertificatePanel.jsx'
 import VulnerabilityList from '../components/VulnerabilityList.jsx'
 import { ScoreRadarChart } from '../components/ComparisonChart.jsx'
+import { COLORS, SHADOWS, CLIP, FONT, TRANSITIONS } from '../theme.js'
 
 const SEVERITY_ORDER = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 }
+const SEV_COLORS = { CRITICAL: COLORS.destructive, HIGH: '#ff5252', MEDIUM: COLORS.warn, LOW: COLORS.accent3, INFO: COLORS.mutedFg }
 
-function severityDot(sev) {
-  const colors = { CRITICAL: '#ff1744', HIGH: '#ff5252', MEDIUM: '#ffab40', LOW: '#40c4ff', INFO: '#94a3b8' }
-  return <span style={{ color: colors[sev] || '#94a3b8', fontSize: 10, marginRight: 4 }}>●</span>
+function SeverityDot({ sev }) {
+  return (
+    <span style={{ color: SEV_COLORS[sev] || COLORS.mutedFg, fontSize: 9, marginRight: 5 }}>◆</span>
+  )
 }
 
 export default function ScanResult({ result }) {
   const [tab, setTab] = useState('overview')
 
-  // Count vulns by severity for tab badge
   const critCount = result.vulnerabilities.filter(v => v.severity === 'CRITICAL').length
   const highCount = result.vulnerabilities.filter(v => v.severity === 'HIGH').length
-
-  const tabBadge = (critCount + highCount) > 0
-    ? <span style={s.badge}>{critCount + highCount}</span>
-    : null
+  const alertCount = critCount + highCount
 
   if (!result.reachable) {
     return (
       <div style={s.errorCard}>
-        <div style={s.errorIcon}>⚠️</div>
+        <div style={s.errorIconWrap}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              stroke={COLORS.destructive} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <p style={s.errorEyebrow}>// DOMAIN UNREACHABLE</p>
         <p style={s.errorDomain}>{result.domain}</p>
-        <p style={s.errorMsg}>{result.error_message || 'Domain could not be reached.'}</p>
-        <p style={s.errorHint}>Check that the domain exists, has port 443 open, and supports HTTPS.</p>
+        <p style={s.errorMsg}>{result.error_message || 'Connection failed — host may be down or port 443 is closed.'}</p>
+        <p style={s.errorHint}>Verify the domain exists, has port 443 open, and supports HTTPS.</p>
       </div>
     )
   }
+
+  const tabs = [
+    { id: 'overview', label: 'OVERVIEW' },
+    { id: 'certificate', label: 'CERTIFICATE & TLS' },
+    { id: 'vulnerabilities', label: `VULNERABILITIES${alertCount > 0 ? ` [${alertCount}]` : ''}` },
+  ]
 
   return (
     <div style={s.wrap}>
       {/* Domain title bar */}
       <div style={s.domainBar}>
         <div style={s.domainLeft}>
-          <span style={s.lockIcon}>🔐</span>
+          <div style={s.lockIcon}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"
+                fill={COLORS.accent} opacity="0.9" />
+              <path d="M9 12l2 2 4-4" stroke={COLORS.bg} strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
           <span style={s.domainName}>{result.domain}</span>
-          <span style={s.scanTime}>Scanned {new Date(result.scan_timestamp).toLocaleTimeString()}</span>
+          <span style={s.scanTime}>// {new Date(result.scan_timestamp).toLocaleTimeString()}</span>
         </div>
         {result.score && (
-          <div style={{ ...s.gradePill, background: result.score.grade_color + '22', color: result.score.grade_color, border: `1px solid ${result.score.grade_color}55` }}>
-            {result.score.grade} · {result.score.total_score}/100
+          <div style={{
+            ...s.gradePill,
+            background: `${result.score.grade_color}15`,
+            color: result.score.grade_color,
+            border: `1px solid ${result.score.grade_color}50`,
+            boxShadow: `0 0 10px ${result.score.grade_color}30`,
+          }}>
+            <span style={{ fontFamily: FONT.heading, fontSize: 16, fontWeight: 900 }}>{result.score.grade}</span>
+            <span style={{ color: COLORS.mutedFg, margin: '0 6px' }}>·</span>
+            <span style={{ fontFamily: FONT.body, fontSize: 12 }}>{result.score.total_score}/100</span>
           </div>
         )}
       </div>
 
-      {/* Inner tabs */}
-      <div style={s.tabs}>
-        {[
-          { id: 'overview', label: 'Overview' },
-          { id: 'certificate', label: 'Certificate & TLS' },
-          { id: 'vulnerabilities', label: <>Vulnerabilities {tabBadge}</> },
-        ].map(t => (
-          <button key={t.id} style={{ ...s.tab, ...(tab === t.id ? s.tabActive : {}) }} onClick={() => setTab(t.id)}>
-            {t.label}
-          </button>
-        ))}
+      {/* Tab bar */}
+      <div style={s.tabBar}>
+        {tabs.map(t => {
+          const isActive = tab === t.id
+          const hasBadge = t.id === 'vulnerabilities' && alertCount > 0
+          return (
+            <button
+              key={t.id}
+              id={`result-tab-${t.id}`}
+              style={{
+                ...s.tab,
+                ...(isActive ? s.tabActive : {}),
+                color: hasBadge && !isActive ? COLORS.destructive : isActive ? COLORS.accent : COLORS.mutedFg,
+              }}
+              onClick={() => setTab(t.id)}
+            >
+              {hasBadge && !isActive && (
+                <span style={s.alertDot} />
+              )}
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Tab content */}
       <div style={s.content}>
 
-        {/* ── Overview tab ─────────────────────────────────── */}
+        {/* ── Overview ─────────────────────────────────────── */}
         {tab === 'overview' && (
           <div style={s.overviewGrid}>
             <ScoreCard score={result.score} domain={result.domain} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {result.score && <ScoreRadarChart score={result.score} domain={result.domain} />}
 
-              {/* Quick-glance vuln summary */}
               {result.vulnerabilities.length > 0 && (
                 <div style={s.quickVulns}>
-                  <p style={s.quickTitle}>Top Issues</p>
-                  {result.vulnerabilities.slice(0, 4).map(v => (
-                    <div key={v.id} style={s.quickRow}>
-                      {severityDot(v.severity)}
-                      <span style={s.quickLabel}>[{v.id}]</span>
-                      <span style={s.quickText}>{v.title}</span>
-                    </div>
-                  ))}
-                  {result.vulnerabilities.length > 4 && (
-                    <button style={s.seeAll} onClick={() => setTab('vulnerabilities')}>
-                      +{result.vulnerabilities.length - 4} more → See all
-                    </button>
-                  )}
+                  {/* Terminal header */}
+                  <div style={s.quickTermHeader}>
+                    <span style={{...s.termDot, background: COLORS.destructive}} />
+                    <span style={{...s.termDot, background: COLORS.warn}} />
+                    <span style={{...s.termDot, background: COLORS.accent}} />
+                    <p style={s.quickTitle}>// TOP ISSUES</p>
+                  </div>
+                  <div style={{ padding: '12px 16px' }}>
+                    {result.vulnerabilities.slice(0, 4).map(v => (
+                      <div key={v.id} style={s.quickRow}>
+                        <SeverityDot sev={v.severity} />
+                        <span style={s.quickLabel}>[{v.id}]</span>
+                        <span style={s.quickText}>{v.title}</span>
+                      </div>
+                    ))}
+                    {result.vulnerabilities.length > 4 && (
+                      <button
+                        id="see-all-vulns-btn"
+                        style={s.seeAll}
+                        onClick={() => setTab('vulnerabilities')}
+                        onMouseEnter={e => { e.currentTarget.style.color = COLORS.accent }}
+                        onMouseLeave={e => { e.currentTarget.style.color = COLORS.accent3 }}
+                      >
+                        +{result.vulnerabilities.length - 4} MORE — VIEW ALL //
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
               {result.vulnerabilities.length === 0 && (
                 <div style={s.allClear}>
-                  <span style={{ fontSize: 24 }}>✅</span>
-                  <p style={{ color: '#00e676', fontWeight: 600, fontSize: 14 }}>All checks passed</p>
+                  <div style={s.allClearIcon}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"
+                        fill={COLORS.accent} opacity="0.15" stroke={COLORS.accent} strokeWidth="1.5" />
+                      <path d="M9 12l2 2 4-4" stroke={COLORS.accent} strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <p style={s.allClearTitle}>ALL SYSTEMS CLEAR</p>
+                  <p style={s.allClearSub}>No vulnerabilities detected on this target.</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* ── Certificate tab ───────────────────────────────── */}
-        {tab === 'certificate' && (
-          <CertificatePanel cert={result.certificate} tls={result.tls} />
-        )}
-
-        {/* ── Vulnerabilities tab ───────────────────────────── */}
-        {tab === 'vulnerabilities' && (
-          <VulnerabilityList vulnerabilities={result.vulnerabilities} />
-        )}
+        {tab === 'certificate' && <CertificatePanel cert={result.certificate} tls={result.tls} />}
+        {tab === 'vulnerabilities' && <VulnerabilityList vulnerabilities={result.vulnerabilities} />}
       </div>
     </div>
   )
@@ -122,63 +173,139 @@ export default function ScanResult({ result }) {
 
 const s = {
   wrap: {
-    background: '#0a0e1a', border: '1px solid #1e2d50',
-    borderRadius: 16, overflow: 'hidden', animation: 'fadeIn 0.4s ease',
+    background: COLORS.bg,
+    border: `1px solid ${COLORS.border}`,
+    clipPath: CLIP.chamfer,
+    overflow: 'hidden',
+    animation: 'fadeIn 0.4s ease',
   },
   errorCard: {
-    background: 'rgba(255,82,82,0.06)', border: '1px solid rgba(255,82,82,0.2)',
-    borderRadius: 16, padding: '32px 24px', textAlign: 'center', animation: 'fadeIn 0.4s ease',
+    background: `${COLORS.destructive}06`,
+    border: `1px solid ${COLORS.destructive}30`,
+    clipPath: CLIP.chamfer,
+    padding: '40px 28px',
+    textAlign: 'center',
+    animation: 'fadeIn 0.4s ease',
   },
-  errorIcon: { fontSize: 32, marginBottom: 10 },
-  errorDomain: { fontSize: 16, fontWeight: 600, color: '#e2e8f0', fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 },
-  errorMsg: { color: '#ff5252', fontSize: 13, marginBottom: 8 },
-  errorHint: { color: '#c1d0ea', fontSize: 13, lineHeight: 1.6 },
+  errorIconWrap: {
+    width: 56, height: 56, borderRadius: '50%',
+    background: `${COLORS.destructive}10`,
+    border: `1px solid ${COLORS.destructive}40`,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    margin: '0 auto 16px',
+    boxShadow: SHADOWS.neonDestructive,
+  },
+  errorEyebrow: {
+    fontFamily: FONT.label, fontSize: 11, color: COLORS.destructive,
+    letterSpacing: '0.15em', marginBottom: 8,
+  },
+  errorDomain: {
+    fontFamily: FONT.body, fontSize: 16, fontWeight: 700,
+    color: COLORS.fg, marginBottom: 10, wordBreak: 'break-all',
+  },
+  errorMsg: { fontFamily: FONT.body, color: COLORS.destructive, fontSize: 13, marginBottom: 10, lineHeight: 1.6 },
+  errorHint: { fontFamily: FONT.body, color: COLORS.mutedFg, fontSize: 12, lineHeight: 1.7 },
+
   domainBar: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '14px 20px', borderBottom: '1px solid #1e2d50',
-    background: '#0f1629', flexWrap: 'wrap', gap: 8,
+    padding: '14px 20px', borderBottom: `1px solid ${COLORS.border}`,
+    background: COLORS.card, flexWrap: 'wrap', gap: 10,
+    boxShadow: `inset 0 -1px 0 ${COLORS.accent}10`,
   },
   domainLeft: { display: 'flex', alignItems: 'center', gap: 10 },
-  lockIcon: { fontSize: 16 },
+  lockIcon: {
+    width: 28, height: 28, clipPath: CLIP.chamferXs,
+    background: `${COLORS.accent}15`, border: `1px solid ${COLORS.accent}40`,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
   domainName: {
-    fontSize: 15, fontWeight: 600, color: '#e2e8f0',
-    fontFamily: "'JetBrains Mono', monospace",
+    fontFamily: FONT.body, fontSize: 14, fontWeight: 700, color: COLORS.fg,
+    letterSpacing: '0.03em',
   },
-  scanTime: { fontSize: 12, color: '#c1d0ea', fontWeight: 500 },
-  gradePill: { fontSize: 13, fontWeight: 700, borderRadius: 20, padding: '4px 14px' },
-  tabs: { display: 'flex', borderBottom: '1px solid #1e2d50', padding: '0 12px', background: '#0f1629' },
+  scanTime: { fontFamily: FONT.label, fontSize: 11, color: COLORS.mutedFg, letterSpacing: '0.08em' },
+  gradePill: {
+    display: 'flex', alignItems: 'center',
+    clipPath: CLIP.chamferXs, padding: '6px 14px',
+  },
+
+  tabBar: {
+    display: 'flex', borderBottom: `1px solid ${COLORS.border}`,
+    padding: '0 12px', background: COLORS.card,
+  },
   tab: {
-    padding: '11px 16px', background: 'transparent', border: 'none',
-    color: '#c7d5ef', cursor: 'pointer', fontSize: 14,
-    fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500,
-    transition: 'color 0.15s', display: 'flex', alignItems: 'center', gap: 6,
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '12px 16px', background: 'transparent', border: 'none',
+    fontFamily: FONT.label, fontSize: 11, fontWeight: 700,
+    letterSpacing: '0.12em', textTransform: 'uppercase',
+    cursor: 'pointer', transition: TRANSITIONS.fast,
+    position: 'relative',
   },
-  tabActive: { color: '#3d7fff', borderBottom: '2px solid #3d7fff' },
-  badge: {
-    background: '#ff1744', color: '#fff', fontSize: 10,
-    borderRadius: 999, padding: '1px 6px', fontWeight: 700,
+  tabActive: {
+    color: COLORS.accent,
+    borderBottom: `2px solid ${COLORS.accent}`,
+    textShadow: `0 0 8px ${COLORS.accent}80`,
   },
+  alertDot: {
+    width: 6, height: 6, borderRadius: '50%',
+    background: COLORS.destructive,
+    boxShadow: `0 0 4px ${COLORS.destructive}`,
+    animation: 'neonPulse 1.5s ease-in-out infinite',
+  },
+
   content: { padding: 20 },
-  overviewGrid: { display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 },
+  overviewGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(240px, 280px) 1fr',
+    gap: 20,
+  },
+
   quickVulns: {
-    background: '#0f1629', border: '1px solid #1e2d50',
-    borderRadius: 12, padding: '16px 18px',
+    background: COLORS.card,
+    border: `1px solid ${COLORS.border}`,
+    clipPath: CLIP.chamferSm,
+    overflow: 'hidden',
   },
+  quickTermHeader: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '10px 16px', borderBottom: `1px solid ${COLORS.border}`,
+    background: `${COLORS.bg}cc`,
+  },
+  termDot: { width: 8, height: 8, borderRadius: '50%' },
   quickTitle: {
-    fontSize: 12, color: '#c1d0ea', textTransform: 'uppercase',
-    letterSpacing: '0.08em', marginBottom: 10,
+    fontFamily: FONT.label, fontSize: 10, color: COLORS.accent,
+    letterSpacing: '0.15em', textTransform: 'uppercase', marginLeft: 6,
   },
-  quickRow: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 },
-  quickLabel: { fontSize: 12, color: '#d0dcf4', fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 },
-  quickText: { fontSize: 14, color: '#eef4ff', lineHeight: 1.5 },
+  quickRow: { display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10 },
+  quickLabel: {
+    fontFamily: FONT.label, fontSize: 11, color: COLORS.accent3,
+    letterSpacing: '0.05em', flexShrink: 0,
+  },
+  quickText: { fontFamily: FONT.body, fontSize: 12, color: COLORS.fg, lineHeight: 1.5 },
   seeAll: {
-    marginTop: 8, background: 'none', border: 'none',
-    color: '#8cb8ff', fontSize: 13, cursor: 'pointer',
-    padding: 0, fontFamily: "'Space Grotesk', sans-serif",
+    marginTop: 10, background: 'none', border: 'none',
+    fontFamily: FONT.label, fontSize: 10, letterSpacing: '0.12em',
+    color: COLORS.accent3, cursor: 'pointer', padding: 0,
+    textTransform: 'uppercase', transition: TRANSITIONS.fast,
   },
+
   allClear: {
-    background: 'rgba(0,230,118,0.05)', border: '1px solid rgba(0,230,118,0.15)',
-    borderRadius: 12, padding: '24px', display: 'flex',
-    flexDirection: 'column', alignItems: 'center', gap: 8,
+    background: `${COLORS.accent}05`,
+    border: `1px solid ${COLORS.accent}20`,
+    clipPath: CLIP.chamferSm,
+    padding: '28px 24px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
   },
+  allClearIcon: {
+    width: 56, height: 56, borderRadius: '50%',
+    background: `${COLORS.accent}10`,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: SHADOWS.neonSm,
+  },
+  allClearTitle: {
+    fontFamily: FONT.heading, fontSize: 14, fontWeight: 700,
+    color: COLORS.accent, letterSpacing: '0.1em',
+    textShadow: `0 0 10px ${COLORS.accent}60`,
+  },
+  allClearSub: { fontFamily: FONT.body, fontSize: 12, color: COLORS.mutedFg, textAlign: 'center' },
 }

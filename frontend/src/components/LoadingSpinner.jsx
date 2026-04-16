@@ -1,17 +1,19 @@
 /**
  * LoadingSpinner.jsx
  * Animated scanning indicator shown during TLS analysis.
+ * Cyberpunk terminal aesthetic with neon radar animation.
  */
 import React, { useEffect, useState } from 'react'
+import { COLORS, SHADOWS, CLIP, FONT } from '../theme.js'
 
 const messages = [
-  'Initiating TLS handshake...',
-  'Fetching SSL certificate...',
-  'Analyzing cipher suites...',
-  'Checking protocol versions...',
-  'Detecting vulnerabilities...',
-  'Computing security score...',
-  'Generating report...',
+  'INITIALIZING TLS HANDSHAKE...',
+  'FETCHING SSL CERTIFICATE DATA...',
+  'ANALYZING CIPHER SUITES...',
+  'VERIFYING PROTOCOL VERSIONS...',
+  'DETECTING KNOWN VULNERABILITIES...',
+  'COMPUTING THREAT SCORE...',
+  'GENERATING FINAL DOSSIER...',
 ]
 
 export default function LoadingSpinner({ domainCount = 1 }) {
@@ -29,129 +31,137 @@ export default function LoadingSpinner({ domainCount = 1 }) {
   }, [])
 
   return (
-    <div style={styles.overlay}>
-      {/* Radar animation */}
-      <div style={styles.radar}>
-        <div style={styles.radarRing1} />
-        <div style={styles.radarRing2} />
-        <div style={styles.radarRing3} />
-        <div style={styles.radarSweep} />
-        <div style={styles.radarCenter}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+    <div style={s.overlay}>
+      {/* Neon Radar Animation */}
+      <div style={s.radar}>
+        <div style={s.radarRing1} />
+        <div style={s.radarRing2} />
+        <div style={s.radarRing3} />
+        <div style={s.radarSweep} />
+        <div style={s.radarCenter}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M12 1L15.09 8.26L23 9.27L17.5 14.64L18.18 22.73L12 19.77L5.82 22.73L6.5 14.64L1 9.27L8.91 8.26L12 1Z"
-              fill="#3d7fff" opacity="0.9" />
+              fill={COLORS.bg} stroke={COLORS.accent} strokeWidth="1" />
           </svg>
         </div>
       </div>
 
-      <h2 style={styles.title}>Scanning {domainCount} domain{domainCount > 1 ? 's' : ''}...</h2>
+      <h2 style={s.title} className="cyber-glitch">
+        SCANNING {domainCount} TARGET{domainCount > 1 ? 'S' : ''}...
+      </h2>
 
-      {/* Progress bar */}
-      <div style={styles.progressTrack}>
-        <div style={{ ...styles.progressBar, width: `${progress}%` }} />
-        <div style={{ ...styles.progressGlow, width: `${progress}%` }} />
+      {/* Progress Bar */}
+      <div style={s.progressTrack}>
+        <div style={{ ...s.progressBar, width: `${progress}%` }} />
+        <div style={{ ...s.progressGlow, width: `${progress}%` }} />
       </div>
 
-      <p style={styles.message}>{messages[msgIdx]}</p>
+      <p style={s.message}>
+        <span style={s.blink}>_</span> {messages[msgIdx]}
+      </p>
 
-      {/* Scrolling log lines */}
-      <div style={styles.logBox}>
+      {/* Terminal Log */}
+      <div style={s.logBox}>
+        <div style={s.logTermHeader}>
+          <span style={{...s.dot, background: COLORS.destructive}} />
+          <span style={{...s.dot, background: COLORS.warn}} />
+          <span style={{...s.dot, background: COLORS.accent}} />
+          <span style={s.logTermTitle}>sys_log</span>
+        </div>
+
         {messages.slice(0, msgIdx + 1).reverse().map((m, i) => (
-          <div key={i} style={{ ...styles.logLine, opacity: 1 - i * 0.18 }}>
-            <span style={styles.logPrefix}>{'>'}</span> {m}
+          <div key={i} style={{ ...s.logLine, opacity: 1 - i * 0.18 }}>
+            <span style={s.logPrefix}>root@securescope:~#</span> {m}
           </div>
         ))}
       </div>
-
-      <style>{`
-        @keyframes radarSpin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-        @keyframes ringPulse {
-          0%, 100% { opacity: 0.15; transform: scale(1); }
-          50%       { opacity: 0.35; transform: scale(1.04); }
-        }
-        @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-      `}</style>
     </div>
   )
 }
 
-const styles = {
+const s = {
   overlay: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '60px 40px', animation: 'fadeIn 0.4s ease',
+    padding: '60px 20px', animation: 'fadeIn 0.4s ease',
   },
   radar: {
-    position: 'relative', width: 160, height: 160,
+    position: 'relative', width: 140, height: 140,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    marginBottom: 36,
+    marginBottom: 40,
   },
   radarRing1: {
     position: 'absolute', inset: 0, borderRadius: '50%',
-    border: '1px solid #3d7fff', opacity: 0.3,
+    border: `1px solid ${COLORS.accent}`, opacity: 0.3,
     animation: 'ringPulse 2s ease-in-out infinite',
   },
   radarRing2: {
-    position: 'absolute', inset: 24, borderRadius: '50%',
-    border: '1px solid #3d7fff', opacity: 0.25,
+    position: 'absolute', inset: 20, borderRadius: '50%',
+    border: `1px solid ${COLORS.accent}`, opacity: 0.25,
     animation: 'ringPulse 2s ease-in-out infinite 0.4s',
   },
   radarRing3: {
-    position: 'absolute', inset: 48, borderRadius: '50%',
-    border: '1px solid #3d7fff', opacity: 0.2,
-    animation: 'ringPulse 2s ease-in-out infinite 0.8s',
+    position: 'absolute', inset: 40, borderRadius: '50%',
+    border: `1px dashed ${COLORS.accent}`, opacity: 0.3,
+    animation: 'radarSpin 10s linear infinite reverse',
   },
   radarSweep: {
     position: 'absolute', inset: 0, borderRadius: '50%',
-    background: 'conic-gradient(from 0deg, transparent 270deg, rgba(61,127,255,0.4) 360deg)',
+    background: `conic-gradient(from 0deg, transparent 270deg, ${COLORS.accent}60 360deg)`,
     animation: 'radarSpin 2s linear infinite',
   },
   radarCenter: {
-    width: 48, height: 48, borderRadius: '50%',
-    background: 'rgba(61,127,255,0.15)',
-    border: '1px solid rgba(61,127,255,0.5)',
+    width: 40, height: 40, borderRadius: '50%',
+    background: `${COLORS.accent}20`,
+    border: `1px solid ${COLORS.accent}`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 2,
+    boxShadow: SHADOWS.neon,
   },
   title: {
-    fontSize: 22, fontWeight: 600, color: '#e2e8f0', marginBottom: 24,
-    fontFamily: "'Space Grotesk', sans-serif",
+    fontFamily: FONT.heading,
+    fontSize: 20, fontWeight: 700, color: COLORS.fg, marginBottom: 24,
+    letterSpacing: '0.12em', textTransform: 'uppercase',
   },
   progressTrack: {
-    position: 'relative', width: 380, maxWidth: '90vw', height: 6,
-    background: '#1e2d50', borderRadius: 999, overflow: 'hidden',
-    marginBottom: 16,
+    position: 'relative', width: 380, maxWidth: '90vw', height: 4,
+    background: COLORS.border, marginBottom: 16,
   },
   progressBar: {
-    height: '100%', borderRadius: 999,
-    background: 'linear-gradient(90deg, #3d7fff, #00d4ff)',
+    height: '100%',
+    background: COLORS.accent,
     transition: 'width 0.4s ease',
+    boxShadow: SHADOWS.neon,
   },
   progressGlow: {
     position: 'absolute', top: 0, left: 0, height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(0,212,255,0.6), transparent)',
+    background: `linear-gradient(90deg, transparent, ${COLORS.accent3}80, transparent)`,
     backgroundSize: '200% 100%',
     animation: 'shimmer 1.5s infinite',
-    borderRadius: 999,
   },
   message: {
-    color: '#00d4ff', fontSize: 13, fontFamily: "'JetBrains Mono', monospace",
-    marginBottom: 24, height: 20,
+    color: COLORS.accent, fontSize: 13, fontFamily: FONT.label,
+    marginBottom: 28, height: 20, letterSpacing: '0.08em',
   },
+  blink: { animation: 'blink 1s step-end infinite' },
   logBox: {
-    width: 380, maxWidth: '90vw', background: '#0a0e1a',
-    border: '1px solid #1e2d50', borderRadius: 8,
-    padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4,
-    maxHeight: 140, overflow: 'hidden',
+    width: 380, maxWidth: '90vw', background: COLORS.bg,
+    border: `1px solid ${COLORS.accent}40`, clipPath: CLIP.chamferSm,
+    padding: '8px 16px 16px', display: 'flex', flexDirection: 'column', gap: 6,
+    maxHeight: 160, overflow: 'hidden', position: 'relative',
+    boxShadow: `0 0 15px ${COLORS.accent}15 inset`,
   },
+  logTermHeader: {
+    display: 'flex', gap: 6, paddingBottom: 8,
+    borderBottom: `1px solid ${COLORS.border}`, marginBottom: 4, alignItems: 'center',
+  },
+  logTermTitle: {
+    fontSize: 9, color: COLORS.border, marginLeft: 6,
+    fontFamily: FONT.label, letterSpacing: '0.1em',
+  },
+  dot: { width: 6, height: 6, borderRadius: '50%' },
   logLine: {
-    fontSize: 12, fontFamily: "'JetBrains Mono', monospace",
-    color: '#94a3b8', lineHeight: 1.5,
+    fontSize: 11, fontFamily: FONT.body,
+    color: COLORS.fg, lineHeight: 1.5,
   },
-  logPrefix: { color: '#3d7fff', marginRight: 6 },
+  logPrefix: { color: COLORS.mutedFg, marginRight: 8 },
 }

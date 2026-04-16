@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { getTestDomains } from '../services/api.js'
+import { COLORS, SHADOWS, CLIP, FONT, TRANSITIONS } from '../theme.js'
 
 const PLACEHOLDER = `google.com\ngithub.com\nexpired.badssl.com`
 const MAX_DOMAINS = 10
@@ -28,27 +29,13 @@ function analyzeDomains(text) {
 
   for (const token of tokens) {
     const normalized = normalizeDomain(token)
-
-    if (!DOMAIN_PATTERN.test(normalized)) {
-      invalidDomains.push(token)
-      continue
-    }
-
-    if (seen.has(normalized)) {
-      duplicateDomains.push(normalized)
-      continue
-    }
-
+    if (!DOMAIN_PATTERN.test(normalized)) { invalidDomains.push(token); continue }
+    if (seen.has(normalized)) { duplicateDomains.push(normalized); continue }
     seen.add(normalized)
     validDomains.push(normalized)
   }
 
-  return {
-    validDomains,
-    invalidDomains,
-    duplicateDomains,
-    overLimit: validDomains.length > MAX_DOMAINS,
-  }
+  return { validDomains, invalidDomains, duplicateDomains, overLimit: validDomains.length > MAX_DOMAINS }
 }
 
 export default function ValidatedDomainInput({ onScan, isLoading, initialValue = '' }) {
@@ -56,9 +43,7 @@ export default function ValidatedDomainInput({ onScan, isLoading, initialValue =
   const [testDomains, setTestDomains] = useState([])
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    setRaw(initialValue)
-  }, [initialValue])
+  useEffect(() => { setRaw(initialValue) }, [initialValue])
 
   useEffect(() => {
     getTestDomains()
@@ -68,24 +53,10 @@ export default function ValidatedDomainInput({ onScan, isLoading, initialValue =
 
   function handleSubmit() {
     const analysis = analyzeDomains(raw)
-
-    if (!analysis.validDomains.length) {
-      setError('Please enter at least one domain.')
-      return
-    }
-    if (analysis.invalidDomains.length) {
-      setError('Remove invalid domains before scanning.')
-      return
-    }
-    if (analysis.duplicateDomains.length) {
-      setError('Remove duplicate domains before scanning.')
-      return
-    }
-    if (analysis.overLimit) {
-      setError(`Maximum ${MAX_DOMAINS} domains per scan.`)
-      return
-    }
-
+    if (!analysis.validDomains.length) { setError('Please enter at least one domain.'); return }
+    if (analysis.invalidDomains.length) { setError('Remove invalid domains before scanning.'); return }
+    if (analysis.duplicateDomains.length) { setError('Remove duplicate domains before scanning.'); return }
+    if (analysis.overLimit) { setError(`Maximum ${MAX_DOMAINS} domains per scan.`); return }
     setError('')
     onScan(analysis.validDomains)
   }
@@ -106,208 +77,359 @@ export default function ValidatedDomainInput({ onScan, isLoading, initialValue =
   const domainCount = analysis.validDomains.length
   const hasBlockingIssues = analysis.invalidDomains.length > 0 || analysis.duplicateDomains.length > 0 || analysis.overLimit
   const helperMessage = analysis.invalidDomains.length
-    ? `Invalid: ${analysis.invalidDomains.join(', ')}`
+    ? `// INVALID: ${analysis.invalidDomains.join(', ')}`
     : analysis.duplicateDomains.length
-      ? `Duplicates: ${analysis.duplicateDomains.join(', ')}`
+      ? `// DUPLICATE: ${analysis.duplicateDomains.join(', ')}`
       : analysis.overLimit
-        ? `You can scan up to ${MAX_DOMAINS} domains at once.`
+        ? `// MAX ${MAX_DOMAINS} DOMAINS PER SCAN`
         : domainCount > 0
-          ? `${domainCount} valid domain${domainCount > 1 ? 's' : ''} ready to scan.`
-          : 'Paste domains or full URLs. We normalize them automatically.'
-  const helperColor = hasBlockingIssues ? '#ffab40' : '#64748b'
+          ? `// ${domainCount} TARGET${domainCount > 1 ? 'S' : ''} QUEUED — READY TO INITIATE`
+          : '// PASTE DOMAINS OR FULL URLS — WE NORMALIZE AUTOMATICALLY'
+  const helperColor = hasBlockingIssues ? COLORS.warn : domainCount > 0 ? COLORS.accent : COLORS.mutedFg
 
   return (
     <div style={s.card}>
-      <div style={s.header}>
-        <div style={s.iconWrap}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#3d7fff" strokeWidth="1.5" />
-            <path d="M12 2C12 2 8 7 8 12s4 10 4 10M12 2c0 0 4 5 4 10s-4 10-4 10M2 12h20" stroke="#3d7fff" strokeWidth="1.5" />
-          </svg>
-        </div>
-        <div>
-          <h2 style={s.title}>Domain Scanner</h2>
-          <p style={s.subtitle}>Enter domains to analyze, one per line or comma-separated.</p>
-        </div>
+      {/* Terminal header bar */}
+      <div style={s.termHeader}>
+        <span style={s.termDot(COLORS.destructive)} />
+        <span style={s.termDot(COLORS.warn)} />
+        <span style={s.termDot(COLORS.accent)} />
+        <span style={s.termTitle}>DOMAIN_SCANNER.exe</span>
       </div>
 
-      <div style={s.textareaWrap}>
-        <textarea
-          style={s.textarea}
-          value={raw}
-          onChange={(event) => {
-            setRaw(event.target.value)
-            setError('')
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder={PLACEHOLDER}
-          rows={5}
-          disabled={isLoading}
-          spellCheck={false}
-        />
-        {domainCount > 0 && (
-          <div style={s.countBadge}>{domainCount} domain{domainCount > 1 ? 's' : ''}</div>
-        )}
-      </div>
-
-      {error && <p style={s.error}>Warning: {error}</p>}
-      <p style={{ ...s.helper, color: helperColor }}>{helperMessage}</p>
-
-      <div style={s.chipsSection}>
-        <span style={s.chipsLabel}>Quick test:</span>
-        <div style={s.chips}>
-          {testDomains.map((domain) => (
-            <button key={domain} style={s.chip} onClick={() => addTestDomain(domain)} disabled={isLoading}>
-              {domain}
-            </button>
-          ))}
+      <div style={s.body}>
+        {/* Header */}
+        <div style={s.header}>
+          <div style={s.iconWrap}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke={COLORS.accent} strokeWidth="1.5"/>
+              <path d="M12 2C12 2 8 7 8 12s4 10 4 10M12 2c0 0 4 5 4 10s-4 10-4 10M2 12h20" stroke={COLORS.accent} strokeWidth="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <h2 style={s.title}>DOMAIN SCANNER</h2>
+            <p style={s.subtitle}>Enter targets — one per line or comma-separated</p>
+          </div>
         </div>
-      </div>
 
-      <div style={s.actions}>
-        <button style={s.clearBtn} onClick={() => setRaw('')} disabled={isLoading || !raw}>
-          Clear
-        </button>
-        <button style={s.scanBtn} onClick={handleSubmit} disabled={isLoading || !raw.trim() || hasBlockingIssues}>
-          {isLoading ? (
-            <>
-              <span style={s.spinner} /> Scanning...
-            </>
-          ) : (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: 8 }}>
-                <circle cx="11" cy="11" r="8" stroke="white" strokeWidth="2" />
-                <path d="M21 21l-4.35-4.35" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              Scan {domainCount > 0 ? `${domainCount} Domain${domainCount > 1 ? 's' : ''}` : 'Domains'}
-            </>
+        {/* Textarea */}
+        <div style={s.textareaWrap}>
+          <span style={s.prompt}>&gt;</span>
+          <textarea
+            id="domain-input"
+            style={s.textarea}
+            value={raw}
+            onChange={(event) => { setRaw(event.target.value); setError('') }}
+            onKeyDown={handleKeyDown}
+            placeholder={PLACEHOLDER}
+            rows={5}
+            disabled={isLoading}
+            spellCheck={false}
+          />
+          {domainCount > 0 && (
+            <div style={s.countBadge}>
+              {domainCount} TARGET{domainCount > 1 ? 'S' : ''}
+            </div>
           )}
-        </button>
-      </div>
+        </div>
 
-      <p style={s.hint}>Tip: Press Ctrl+Enter to scan. Maximum {MAX_DOMAINS} domains per run.</p>
+        {/* Validation feedback */}
+        {error && (
+          <p style={s.error}>
+            <span style={{ color: COLORS.destructive }}>!</span> {error}
+          </p>
+        )}
+        <p style={{ ...s.helper, color: helperColor }}>{helperMessage}</p>
+
+        {/* Quick test chips */}
+        <div style={s.chipsSection}>
+          <span style={s.chipsLabel}>// QUICK TEST TARGETS:</span>
+          <div style={s.chips}>
+            {testDomains.map((domain) => (
+              <button
+                key={domain}
+                id={`chip-${domain}`}
+                style={s.chip}
+                onClick={() => addTestDomain(domain)}
+                disabled={isLoading}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = COLORS.accent3
+                  e.currentTarget.style.color = COLORS.accent3
+                  e.currentTarget.style.boxShadow = SHADOWS.neonTertiary
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = COLORS.border
+                  e.currentTarget.style.color = COLORS.mutedFg
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                {domain}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={s.actions}>
+          <button
+            id="clear-btn"
+            style={s.clearBtn}
+            onClick={() => setRaw('')}
+            disabled={isLoading || !raw}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = COLORS.mutedFg; e.currentTarget.style.color = COLORS.fg }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.color = COLORS.mutedFg }}
+          >
+            CLEAR
+          </button>
+
+          <button
+            id="scan-submit-btn"
+            style={{
+              ...s.scanBtn,
+              opacity: (isLoading || !raw.trim() || hasBlockingIssues) ? 0.5 : 1,
+              cursor: (isLoading || !raw.trim() || hasBlockingIssues) ? 'not-allowed' : 'pointer',
+            }}
+            onClick={handleSubmit}
+            disabled={isLoading || !raw.trim() || hasBlockingIssues}
+            onMouseEnter={e => {
+              if (!isLoading && raw.trim() && !hasBlockingIssues) {
+                e.currentTarget.style.boxShadow = SHADOWS.neonLg
+                e.currentTarget.style.filter = 'brightness(1.1)'
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.boxShadow = SHADOWS.neon
+              e.currentTarget.style.filter = 'none'
+            }}
+          >
+            {isLoading ? (
+              <>
+                <span style={s.spinner} /> SCANNING...
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: 8 }}>
+                  <circle cx="11" cy="11" r="8" stroke={COLORS.bg} strokeWidth="2.5"/>
+                  <path d="M21 21l-4.35-4.35" stroke={COLORS.bg} strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+                INITIATE SCAN {domainCount > 0 ? `[${domainCount}]` : ''}
+              </>
+            )}
+          </button>
+        </div>
+
+        <p style={s.hint}>// CTRL+ENTER TO SCAN &nbsp;·&nbsp; MAX {MAX_DOMAINS} DOMAINS</p>
+      </div>
 
       <style>{`
-        textarea::placeholder { color: #8197c0; }
-        textarea:focus { outline: none; border-color: #3d7fff !important; box-shadow: 0 0 0 3px rgba(61,127,255,0.15); }
+        #domain-input::placeholder { color: #3a3a52; }
+        #domain-input:focus { outline: none; border-color: ${COLORS.accent} !important; box-shadow: 0 0 0 2px ${COLORS.accent}20, 0 0 10px ${COLORS.accent}30 !important; }
         @keyframes btnSpin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   )
 }
 
+const termDot = (color) => ({
+  width: 10,
+  height: 10,
+  borderRadius: '50%',
+  background: color,
+  boxShadow: `0 0 4px ${color}80`,
+  flexShrink: 0,
+})
+
 const s = {
   card: {
-    background: '#121a2f',
-    border: '1px solid #28406f',
-    borderRadius: 16,
-    padding: '28px 32px',
+    background: COLORS.card,
+    border: `1px solid ${COLORS.border}`,
+    clipPath: CLIP.chamfer,
     maxWidth: 700,
     margin: '0 auto',
     animation: 'fadeIn 0.5s ease',
+    overflow: 'hidden',
   },
-  header: { display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 24 },
+  termHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 18px',
+    background: `${COLORS.bg}cc`,
+    borderBottom: `1px solid ${COLORS.border}`,
+  },
+  termDot: (color) => ({
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    background: color,
+    boxShadow: `0 0 4px ${color}`,
+    flexShrink: 0,
+  }),
+  termTitle: {
+    fontFamily: FONT.label,
+    fontSize: 11,
+    color: COLORS.mutedFg,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    marginLeft: 8,
+  },
+  body: { padding: '24px 28px' },
+  header: { display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 20 },
   iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    background: 'rgba(61,127,255,0.1)',
-    border: '1px solid rgba(61,127,255,0.25)',
+    width: 42,
+    height: 42,
+    clipPath: CLIP.chamferSm,
+    background: `${COLORS.accent}10`,
+    border: `1px solid ${COLORS.accent}30`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  title: { fontSize: 19, fontWeight: 700, color: '#f3f7ff', marginBottom: 4 },
-  subtitle: { fontSize: 15, color: '#c1d0ea', lineHeight: 1.6 },
-  textareaWrap: { position: 'relative', marginBottom: 12 },
+  title: {
+    fontFamily: FONT.heading,
+    fontSize: 16,
+    fontWeight: 700,
+    color: COLORS.accent,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    textShadow: `0 0 10px ${COLORS.accent}60`,
+  },
+  subtitle: {
+    fontFamily: FONT.body,
+    fontSize: 12,
+    color: COLORS.mutedFg,
+    letterSpacing: '0.03em',
+  },
+  textareaWrap: { position: 'relative', marginBottom: 10 },
+  prompt: {
+    position: 'absolute',
+    left: 14,
+    top: 14,
+    fontFamily: FONT.body,
+    fontSize: 14,
+    color: COLORS.accent,
+    zIndex: 2,
+    userSelect: 'none',
+    textShadow: `0 0 6px ${COLORS.accent}`,
+  },
   textarea: {
     width: '100%',
-    background: '#0a1020',
-    border: '1px solid #2f4777',
-    borderRadius: 10,
-    padding: '14px 16px',
-    color: '#eef4ff',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 15,
+    background: COLORS.input,
+    border: `1px solid ${COLORS.border}`,
+    clipPath: CLIP.chamferSm,
+    padding: '14px 16px 14px 32px',
+    color: COLORS.accent,
+    fontFamily: FONT.body,
+    fontSize: 13,
     lineHeight: 1.8,
     resize: 'vertical',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
+    transition: TRANSITIONS.base,
+    caretColor: COLORS.accent,
   },
   countBadge: {
     position: 'absolute',
     top: 10,
     right: 12,
-    background: 'rgba(61,127,255,0.15)',
-    border: '1px solid rgba(61,127,255,0.3)',
-    borderRadius: 20,
-    padding: '2px 10px',
-    fontSize: 12,
-    color: '#d8e6ff',
-    fontWeight: 600,
+    background: `${COLORS.accent}15`,
+    border: `1px solid ${COLORS.accent}40`,
+    clipPath: CLIP.chamferXs,
+    padding: '3px 10px',
+    fontFamily: FONT.label,
+    fontSize: 10,
+    color: COLORS.accent,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
-  error: { color: '#ffb4ab', fontSize: 14, marginBottom: 8, fontWeight: 600 },
-  helper: { fontSize: 14, marginBottom: 14, lineHeight: 1.6 },
+  error: {
+    fontFamily: FONT.body,
+    color: COLORS.warn,
+    fontSize: 12,
+    marginBottom: 8,
+    letterSpacing: '0.05em',
+  },
+  helper: {
+    fontFamily: FONT.label,
+    fontSize: 11,
+    marginBottom: 16,
+    lineHeight: 1.6,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+  },
   chipsSection: { marginBottom: 20 },
   chipsLabel: {
-    fontSize: 12,
-    color: '#d2def4',
+    fontFamily: FONT.label,
+    fontSize: 10,
+    color: COLORS.mutedFg,
     textTransform: 'uppercase',
-    letterSpacing: '0.08em',
+    letterSpacing: '0.12em',
     display: 'block',
     marginBottom: 8,
   },
   chips: { display: 'flex', flexWrap: 'wrap', gap: 6 },
   chip: {
-    background: '#0c1324',
-    border: '1px solid #2a416f',
-    borderRadius: 6,
+    background: COLORS.bg,
+    border: `1px solid ${COLORS.border}`,
+    clipPath: CLIP.chamferXs,
     padding: '4px 10px',
-    fontSize: 13,
-    color: '#e3ecfb',
+    fontFamily: FONT.body,
+    fontSize: 11,
+    color: COLORS.mutedFg,
     cursor: 'pointer',
-    fontFamily: "'JetBrains Mono', monospace",
-    transition: 'all 0.15s',
+    transition: TRANSITIONS.base,
   },
-  actions: { display: 'flex', gap: 10, marginBottom: 10 },
+  actions: { display: 'flex', gap: 10, marginBottom: 12 },
   clearBtn: {
-    padding: '10px 20px',
-    borderRadius: 8,
-    border: '1px solid #1e2d50',
+    fontFamily: FONT.label,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    padding: '10px 18px',
+    clipPath: CLIP.chamferSm,
+    border: `1px solid ${COLORS.border}`,
     background: 'transparent',
-    color: '#d6e2f7',
+    color: COLORS.mutedFg,
     cursor: 'pointer',
-    fontSize: 14,
-    fontFamily: "'Space Grotesk', sans-serif",
-    fontWeight: 500,
-    transition: 'all 0.15s',
+    transition: TRANSITIONS.base,
   },
   scanBtn: {
     flex: 1,
-    padding: '11px 24px',
-    borderRadius: 8,
+    fontFamily: FONT.label,
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: '0.15em',
+    textTransform: 'uppercase',
+    padding: '12px 24px',
+    clipPath: CLIP.chamferSm,
     border: 'none',
-    background: 'linear-gradient(135deg, #3d7fff, #0055ff)',
-    color: '#fff',
+    background: COLORS.accent,
+    color: COLORS.bg,
     cursor: 'pointer',
-    fontSize: 14,
-    fontFamily: "'Space Grotesk', sans-serif",
-    fontWeight: 600,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.2s',
-    boxShadow: '0 4px 15px rgba(61,127,255,0.3)',
+    transition: TRANSITIONS.base,
+    boxShadow: SHADOWS.neon,
   },
   spinner: {
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     borderRadius: '50%',
-    border: '2px solid rgba(255,255,255,0.3)',
-    borderTopColor: '#fff',
+    border: `2px solid ${COLORS.bg}40`,
+    borderTopColor: COLORS.bg,
     animation: 'btnSpin 0.7s linear infinite',
     marginRight: 8,
     display: 'inline-block',
   },
-  hint: { fontSize: 12, color: '#a7bbde', textAlign: 'center', lineHeight: 1.5 },
+  hint: {
+    fontFamily: FONT.label,
+    fontSize: 10,
+    color: COLORS.mutedFg,
+    textAlign: 'center',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+  },
 }
